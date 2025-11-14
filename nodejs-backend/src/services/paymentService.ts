@@ -12,30 +12,16 @@ export class PaymentService {
     this.profileRepository = profileRepository;
   }
 
-  async deletePaymentMethod(parentId: number, method: string) {
+  async deletePaymentMethod(parentId: number, methodId: number) {
     const initialParentProfileBackend = new ParentProfileBackend(
       [],
       [],
       await this.profileRepository.retrievePaymentMethods(parentId)
     );
-    const parentProfileBackend =
-      initialParentProfileBackend.deletePaymentMethod(parentId, method);
+    const paymentMethod = initialParentProfileBackend.paymentMethod(methodId);
+    this.profileRepository.deletePaymentMethod(methodId)
 
-    await Promise.all(
-      initialParentProfileBackend
-        .paymentMethods(parentId)
-        .filter(
-          (paymentMethod) =>
-            !parentProfileBackend
-              .paymentMethods(parentId)
-              .includes(paymentMethod)
-        )
-        .map((paymentMethod) =>
-          this.profileRepository.deletePaymentMethod(paymentMethod.id)
-        )
-    );
-
-    return true;
+    return paymentMethod;
   }
 
   async setActivePaymentMethod(parentId: number, methodId: number) {

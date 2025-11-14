@@ -46,9 +46,9 @@ export const resolvers = {
     },
     deletePaymentMethod: async (
       _: any,
-      { parentId, method }: { parentId: number; method: string }
+      { parentId, methodId }: { parentId: number; methodId: number }
     ) => {
-      return await paymentService.deletePaymentMethod(parentId, method);
+      return await paymentService.deletePaymentMethod(parentId, methodId);
     },
   },
 };

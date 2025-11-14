@@ -105,8 +105,10 @@ const ADD_PAYMENT_METHOD = gql`
 `;
 
 const DELETE_PAYMENT_METHOD = gql`
-  mutation DeletePaymentMethod($parentId: Long!, $method: String!) {
-    deletePaymentMethod(parentId: $parentId, method: $method)
+  mutation DeletePaymentMethod($parentId: Long!, $methodId: Long!) {
+    deletePaymentMethod(parentId: $parentId, methodId: $methodId) {
+      id
+    }
   }
 `;
 
@@ -117,8 +119,36 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
     variables: { parentId },
   });
   const [setActivePaymentMethod] = useMutation(SET_ACTIVE_PAYMENT_METHOD);
-  const [addPaymentMethod] = useMutation(ADD_PAYMENT_METHOD);
-  const [deletePaymentMethod] = useMutation(DELETE_PAYMENT_METHOD);
+  const [addPaymentMethod] = useMutation(ADD_PAYMENT_METHOD, {
+    update(cache, { data: { addPaymentMethod } }) {
+      console.log("Added payment method:", addPaymentMethod);
+      cache.modify({
+        fields: {
+          paymentMethods(existingMethods = []) {
+            const newMethodRef = cache.writeFragment({
+              data: addPaymentMethod,
+              fragment: gql`
+                fragment NewPaymentMethod on PaymentMethod {
+                  id
+                  method
+                  isActive
+                }
+              `,
+            });
+            return [...existingMethods, newMethodRef];
+          },
+        },
+      });
+    },
+  });
+  const [deletePaymentMethod] = useMutation(DELETE_PAYMENT_METHOD, {
+    update(cache, { data: { deletePaymentMethod } }) {
+      console.log("Delete payment method result:", deletePaymentMethod);
+      if (deletePaymentMethod && deletePaymentMethod.id) {
+        cache.evict({ id: cache.identify(deletePaymentMethod) });
+      }
+    },
+  });
 
   if (loading) return <p>Loading...</p>;
 
@@ -139,9 +169,9 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
     }
   };
 
-  const handleDeleteMethod = (method: string) => {
+  const handleDeleteMethod = (methodId: number) => {
     deletePaymentMethod({
-      variables: { parentId, method },
+      variables: { parentId, methodId },
     });
   };
 
@@ -201,7 +231,7 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
             )}
             <IconButton
               className={classes.deleteButton}
-              onClick={() => handleDeleteMethod(method.method)}
+              onClick={() => handleDeleteMethod(method.id)}
               size="small"
             >
               <DeleteIcon />
