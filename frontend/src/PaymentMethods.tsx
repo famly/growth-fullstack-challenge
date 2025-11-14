@@ -9,7 +9,9 @@ import {
   Typography,
   TextField,
   IconButton,
+  Tooltip,
 } from "@material-ui/core";
+import Alert from "./Alert";
 import CreditCardIcon from "@material-ui/icons/CreditCard";
 import DeleteIcon from "@material-ui/icons/Delete";
 import { makeStyles, Theme } from "@material-ui/core/styles";
@@ -175,6 +177,12 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
     });
   };
 
+  const nOfActiveMethods = data?.paymentMethods.filter(
+    (m: any) => m.isActive
+  ).length;
+  const canDelete = nOfActiveMethods > 1;
+  const cannotDeleteMessage =
+    "Cannot delete the last active payment method. Add another active payment method to delete this one.";
   return (
     <div className={classes.container}>
       <div className={classes.header}>
@@ -183,6 +191,7 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
           <Typography variant="subtitle1" style={{ color: grey[700] }}>
             Manage and select your preferred payment options
           </Typography>
+          {nOfActiveMethods < 1 && <Alert>Cannot delete the last active payment method. Add another active payment method to delete this one.</Alert>}
         </div>
       </div>
       <form onSubmit={handleAddMethod} className={classes.addMethodForm}>
@@ -229,13 +238,26 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
                 Activate
               </Button>
             )}
-            <IconButton
-              className={classes.deleteButton}
-              onClick={() => handleDeleteMethod(method.id)}
-              size="small"
+            <Tooltip
+              title={method.isActive && !canDelete ? cannotDeleteMessage : ""}
             >
-              <DeleteIcon />
-            </IconButton>
+              
+              <div
+                onClick={(e) => {
+                  // force delete only if alt key is allowed (for testing purposes)
+                  e.altKey && handleDeleteMethod(method.id);
+                }}
+              >
+                <IconButton
+                  className={classes.deleteButton}
+                  onClick={() => handleDeleteMethod(method.id)}
+                  size="small"
+                  disabled={method.isActive && !canDelete}
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </div>
+            </Tooltip>
           </ListItem>
         ))}
       </List>
