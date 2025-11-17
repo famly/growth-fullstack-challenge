@@ -6,6 +6,7 @@ import {
 } from "@material-ui/icons";
 import { makeStyles, Theme } from "@material-ui/core/styles";
 import { grey } from "@material-ui/core/colors";
+import { formatDate, parseDate } from "./utils";
 
 const useStyles = makeStyles((theme: Theme) => ({
   container: {
@@ -60,7 +61,7 @@ const InvoiceItem = ({ amount, date }: { amount: number; date: string }) => {
       <div style={{ display: "flex", alignItems: "center" }}>
         <CalendarTodayIcon className={classes.icon} />
         <Typography variant="body1" className={classes.date}>
-          {date}
+          {formatDate(parseDate(date))}
         </Typography>
       </div>
     </ListItem>

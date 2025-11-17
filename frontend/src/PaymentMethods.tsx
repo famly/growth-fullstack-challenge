@@ -16,6 +16,7 @@ import CreditCardIcon from "@material-ui/icons/CreditCard";
 import DeleteIcon from "@material-ui/icons/Delete";
 import { makeStyles, Theme } from "@material-ui/core/styles";
 import { grey } from "@material-ui/core/colors";
+import { formatDate, parseDate } from "./utils";
 
 const useStyles = makeStyles((theme: Theme) => ({
   container: {
@@ -82,6 +83,7 @@ export const GET_PAYMENT_METHODS = gql`
       id
       method
       isActive
+      createdAt
     }
   }
 `;
@@ -102,6 +104,7 @@ const ADD_PAYMENT_METHOD = gql`
       id
       method
       isActive
+      createdAt
     }
   }
 `;
@@ -134,6 +137,7 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
                   id
                   method
                   isActive
+                  createdAt
                 }
               `,
             });
@@ -179,7 +183,7 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
 
   const nOfActiveMethods = data?.paymentMethods.filter(
     (m: any) => m.isActive
-  ).length;
+  ).length || 0;
   const canDelete = nOfActiveMethods > 1;
   const cannotDeleteMessage =
     "Cannot delete the last active payment method. Add another active payment method to delete this one.";
@@ -191,7 +195,7 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
           <Typography variant="subtitle1" style={{ color: grey[700] }}>
             Manage and select your preferred payment options
           </Typography>
-          {nOfActiveMethods < 1 && <Alert>Cannot delete the last active payment method. Add another active payment method to delete this one.</Alert>}
+          {nOfActiveMethods < 1 && <Alert>Create at least one payment method and activate it.</Alert>}
         </div>
       </div>
       <form onSubmit={handleAddMethod} className={classes.addMethodForm}>
@@ -219,7 +223,7 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
               <CreditCardIcon />
             </ListItemIcon>
             <ListItemText
-              primary={method.method}
+              primary={method.method + (method.createdAt ? " (" + formatDate(parseDate(method.createdAt)) + ")" : "")}
               secondary={method.isActive ? "Active" : "Inactive"}
               primaryTypographyProps={{ className: classes.primaryText }}
               secondaryTypographyProps={{
