@@ -1,10 +1,12 @@
 import { GraphQLLong } from "graphql-scalars";
 import { ProfileRepository } from "../repository/profileRepository";
-import { ParentProfileBackend } from "../parentProfileBackend";
-import { PaymentService } from "../services/paymentService";
+import {
+  Invoice,
+  ParentProfile,
+  ParentProfileBackend,
+} from "../parentProfileBackend";
 
 const profileRepository = new ProfileRepository();
-const paymentService = new PaymentService(profileRepository);
 
 export const resolvers = {
   Long: GraphQLLong,
@@ -36,19 +38,53 @@ export const resolvers = {
       _: any,
       { parentId, method }: { parentId: number; method: string }
     ) => {
-      return await paymentService.addPaymentMethod(parentId, method);
+      const createPaymentArgs = {
+        id: 0,
+        parentId,
+        method,
+        isActive: false,
+      };
+      const paymentMethod = await profileRepository.createPaymentMethod(
+        createPaymentArgs
+      );
+      const parentProfiles: ParentProfile[] = [];
+      const invoices: Invoice[] = [];
+      const parentProfileBackend = new ParentProfileBackend(
+        parentProfiles,
+        invoices,
+        [paymentMethod]
+      );
+      return parentProfileBackend.paymentMethod(paymentMethod.id);
     },
     setActivePaymentMethod: async (
       _: any,
       { parentId, methodId }: { parentId: number; methodId: number }
     ) => {
-      return await paymentService.setActivePaymentMethod(parentId, methodId);
+      const parentProfileBackend = new ParentProfileBackend(
+        [],
+        [],
+        await profileRepository.retrievePaymentMethods(parentId)
+      ).setActivePaymentMethod(parentId, methodId);
+
+      await profileRepository.setActivePaymentMethod(parentId, methodId);
+
+      return parentProfileBackend.paymentMethod(methodId);
     },
     deletePaymentMethod: async (
       _: any,
       { parentId, methodId }: { parentId: number; methodId: number }
     ) => {
-      return await paymentService.deletePaymentMethod(parentId, methodId);
+      const backend = new ParentProfileBackend(
+        [],
+        [],
+        await profileRepository.retrievePaymentMethods(parentId)
+      );
+      const paymentMethod = backend.paymentMethod(methodId);
+      await profileRepository.deletePaymentMethod(methodId);
+
+      console.log("Deleted payment method:", paymentMethod);
+
+      return paymentMethod;
     },
   },
 };
