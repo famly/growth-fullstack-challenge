@@ -31,9 +31,7 @@ export class PaymentService {
       await this.profileRepository.retrievePaymentMethods(parentId)
     ).setActivePaymentMethod(parentId, methodId);
 
-    await this.profileRepository.updatePaymentMethods(
-      parentProfileBackend.paymentMethods(parentId)
-    );
+    await this.profileRepository.setActivePaymentMethod(parentId, methodId);
 
     return parentProfileBackend.paymentMethod(methodId);
   }
