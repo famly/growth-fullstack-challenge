@@ -17,7 +17,7 @@ export class ProfileRepository {
       const sql =
         "INSERT INTO payment_methods (parent_id, method, is_active, creation_date) VALUES (?, ?, ?, ?)";
       const createdAt = convertToDateTimeStringForDB(new Date());
-      const [result] = await db.execute<mysql.ResultSetHeader>(sql, [
+      const [result] = await connection.execute<mysql.ResultSetHeader>(sql, [
         paymentMethod.parentId,
         paymentMethod.method,
         paymentMethod.isActive,
@@ -146,7 +146,7 @@ export class ProfileRepository {
         methodId,
       ]);
       const sql = "DELETE FROM payment_methods WHERE id = ?";
-      const [result] = await db.execute<mysql.ResultSetHeader>(sql, [methodId]);
+      const [result] = await connection.execute<mysql.ResultSetHeader>(sql, [methodId]);
 
       // Log the deletion
       if (oldMethod.length > 0) {
