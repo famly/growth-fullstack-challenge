@@ -92,7 +92,7 @@ export class ProfileRepository {
 
   async setActivePaymentMethod(
     parentId: number,
-    paymentMethodId: number,
+    paymentMethodId: number
   ): Promise<number> {
     const connection = await db.getConnection();
     try {
@@ -200,11 +200,13 @@ export class ProfileRepository {
 
     // Helper function to convert BigInt values to strings for JSON serialization
     const convertBigInts = (_key: string, value: any) => {
-      Object.entries(value).forEach(([k, v]) => {
-        if (typeof v === "bigint") {
-          value[k] = v.toString();
-        }
-      });
+      if (value && typeof value === "object") {
+        Object.entries(value).forEach(([k, v]) => {
+          if (v && typeof v === "bigint") {
+            value[k] = v.toString();
+          }
+        });
+      }
       return value;
     };
 
@@ -216,9 +218,8 @@ export class ProfileRepository {
       JSON.stringify(stateBeforeChange || {}, convertBigInts),
 
       // what is being updated to
-      JSON.stringify(updatedMethod, convertBigInts),
+      JSON.stringify(updatedMethod || {}, convertBigInts),
     ];
-    console.log("AUDIT LOG VALUES:", values);
     connection.execute<mysql.ResultSetHeader>(auditSql, values);
   }
 }
