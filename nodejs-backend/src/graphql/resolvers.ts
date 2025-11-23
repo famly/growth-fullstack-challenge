@@ -16,6 +16,9 @@ export const resolvers = {
     invoices: async (_: any, { parentId }: { parentId: number }) => {
       return new ParentProfileBackend([], await profileRepository.retrieveInvoices(parentId), []).invoices(parentId);
     },
+    paymentMethodHistory: async (_: any, { paymentMethodId }: { paymentMethodId: number }) => {
+      return await profileRepository.retrievePaymentMethodHistory(paymentMethodId);
+    },
   },
   Mutation: {
     addPaymentMethod: async (

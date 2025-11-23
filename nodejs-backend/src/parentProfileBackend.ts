@@ -19,6 +19,16 @@ export  interface Invoice {
     date: string;
 }
 
+export interface PaymentMethodHistory {
+    id: number;
+    paymentMethodId: number;
+    parentId: number;
+    method: string;
+    isActive: boolean;
+    changedAt: string;
+    changedByUserId: number;
+}
+
 export class ParentProfileBackend {
     private readonly allParentProfiles: ParentProfile[];
     private readonly allInvoices: Invoice[];

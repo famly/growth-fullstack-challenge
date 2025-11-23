@@ -24,10 +24,21 @@ export const typeDefs = gql`
     date: String!
   }
 
+  type PaymentMethodHistory {
+    id: Long!
+    paymentMethodId: Long!
+    parentId: Int!
+    method: String!
+    isActive: Boolean!
+    changedAt: String!
+    changedByUserId: Int!
+  }
+
   type Query {
     parentProfile(parentId: Long!): ParentProfile
     paymentMethods(parentId: Long!): [PaymentMethod]
     invoices(parentId: Long!): [Invoice]
+    paymentMethodHistory(paymentMethodId: Long!): [PaymentMethodHistory]
   }
 
   type Mutation {

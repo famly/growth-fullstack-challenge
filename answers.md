@@ -1,7 +1,8 @@
 # Exercises - Answers
 
-### Overall:
-There's no E2E test suite in place. As this isn't asked, I'm not implementing it, but in real world scenario I'd argue for a fitting E2E test set up.
+### Overall Considerations:
+- There's no E2E test suite in place. As this isn't asked, I'm not implementing it, but in real world scenario I'd argue for a fitting E2E test set up.
+- The Queries are sending post requests, which is simple and works fine. However this limits CDN caching, so in certain scenarios, GET requests might make sense.
 
 ### 1
 #### Reasoning: 
@@ -36,6 +37,30 @@ There's no E2E test suite in place. As this isn't asked, I'm not implementing it
 - The existing payment method values should be back-filled using the parent's first invoice timestamp for the lack of a better alternative.
 - After the data model is updated, the PaymentMethod types need to be updated to reflect the new model.
 - The frontend component should display the creation date.
-
 #### Scoped out:
 - Famly operates in a mutli-timezone context, therefore not only the timezone but also the offset should be stored. A timezone offset could be e.g. implemented by DB Tentant ID, Nursery-home address, Parent Address, etc. and should be aligned with the business domain. I'll treat everything as UTC now.
+
+
+### 5
+#### Reasoning:
+- First thing that comes to mind is creating a PaymentMethodHistory table.
+- The history table needs to document the timestamp (e.g. analogue to task 4) and the id of the entity (e.g. user) who made the change
+- A history entry moreover needs to hold the id to the current state of the respective PaymentMethod entity.
+- The historization of actual PaymentMethod snapshots could be approached in at least 2 ways:
+ 1. Creating a full history by snapshotting the whole PaymentMethod object. This will come in handy, when restoring, however it stores non-updated attributes redundantly.
+ 2. Creating a "diff" view, by abstracting change, like (FieldName, OldValue, NewValue,...)
+For robustness, I'm rolling with approach 1.
+
+Here's a sample api call
+
+`curl -X POST http://localhost:9000/graphql \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "{ paymentMethodHistory(paymentMethodId: 1) { id paymentMethodId parentId method isActive changedAt changedByUserId } }"
+  }'`
+
+#### Scoped out:
+- We could add a soft delete logic including with a deleted_at timestamp. Efficieny, Restoring,... 
+- We could also add a hinf on the change type, e.g. an enum indicating creation, updating, deletion...
+- Proper user ids for the changing entity. In case someone else than the parent changes the payment method (e.g. customer service), mutliple values could be used, so I'm just going with a random int here...
+- This should also receive proper testing.
