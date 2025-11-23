@@ -80,6 +80,7 @@ export const GET_PAYMENT_METHODS = gql`
       id
       method
       isActive
+      createdAt
     }
   }
 `;
@@ -105,8 +106,8 @@ const ADD_PAYMENT_METHOD = gql`
 `;
 
 const DELETE_PAYMENT_METHOD = gql`
-  mutation DeletePaymentMethod($parentId: Long!, $method: String!) {
-    deletePaymentMethod(parentId: $parentId, method: $method)
+  mutation DeletePaymentMethod($parentId: Long!, $methodId: Long!) {
+    deletePaymentMethod(parentId: $parentId, methodId: $methodId)
   }
 `;
 
@@ -125,6 +126,7 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
   const handleActivate = (methodId: number) => {
     setActivePaymentMethod({
       variables: { parentId, methodId },
+      refetchQueries: [{ query: GET_PAYMENT_METHODS, variables: { parentId } }],
     });
   };
 
@@ -133,15 +135,17 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
     if (newMethod.trim()) {
       addPaymentMethod({
         variables: { parentId, method: newMethod.trim() },
+        refetchQueries: [{ query: GET_PAYMENT_METHODS, variables: { parentId } }],
       }).then(() => {
         setNewMethod("");
       });
     }
   };
-
-  const handleDeleteMethod = (method: string) => {
+  
+  const handleDeleteMethod = (methodId: number) => {
     deletePaymentMethod({
-      variables: { parentId, method },
+      variables: { parentId, methodId: methodId },
+      refetchQueries: [{ query: GET_PAYMENT_METHODS, variables: { parentId } }]
     });
   };
 
@@ -181,13 +185,24 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
             </ListItemIcon>
             <ListItemText
               primary={method.method}
-              secondary={method.isActive ? "Active" : "Inactive"}
+              secondary={
+                <>
+                  <span
+                    className={
+                      method.isActive ? classes.activeText : classes.inactiveText
+                    }
+                  >
+                    {method.isActive ? "Active" : "Inactive"}
+                  </span>
+                  {method.createdAt && (
+                    <>
+                      {" • "}
+                      Created: {new Date(method.createdAt).toLocaleDateString()}
+                    </>
+                  )}
+                </>
+              }
               primaryTypographyProps={{ className: classes.primaryText }}
-              secondaryTypographyProps={{
-                className: method.isActive
-                  ? classes.activeText
-                  : classes.inactiveText,
-              }}
             />
             {!method.isActive && (
               <Button
@@ -201,7 +216,7 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
             )}
             <IconButton
               className={classes.deleteButton}
-              onClick={() => handleDeleteMethod(method.method)}
+              onClick={() => handleDeleteMethod(method.id)}
               size="small"
             >
               <DeleteIcon />

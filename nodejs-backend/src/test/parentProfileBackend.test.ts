@@ -59,7 +59,7 @@ describe("Parent profile backend", () => {
         .createParentProfile("Alice", "Bob")
         .createPaymentMethod(1, "Credit Card", true)
         .paymentMethods(1))
-      .toContainEqual({ id: 1, parentId: 1, method: "Credit Card", isActive: true })
+      .toContainEqual({ id: 1, parentId: 1, method: "Credit Card", isActive: true, createdAt: expect.any(String) })
     });
 
     it("When a payment method is created, and there is a payment method already, the new one should have an id of 2", () => {
@@ -68,16 +68,16 @@ describe("Parent profile backend", () => {
         .createPaymentMethod(1, "Credit Card", false)
         .createPaymentMethod(1, "Debit Card", true)
         .paymentMethods(1))
-      .toContainEqual({ id: 2, parentId: 1, method: "Debit Card", isActive: true })
+      .toContainEqual({ id: 2, parentId: 1, method: "Debit Card", isActive: true, createdAt: expect.any(String) })
     });
 
     it("When a payment method is deleted it should go away, because we don't want to keep payment methods around due to privacy concerns", () => {
       expect(parentProfileBackend
         .createParentProfile("Alice", "Bob")
         .createPaymentMethod(1, "Credit Card", true)
-        .deletePaymentMethod(1, "Credit Card")
+        .deletePaymentMethod(1, 1)
         .paymentMethods(1))
-      .not.toContainEqual({ id: 1, parentId: 1, method: "Credit Card", isActive: true })
+      .not.toContainEqual({ id: 1, parentId: 1, method: "Credit Card", isActive: true, createdAt: expect.any(String) })
     });
 
     it("When setting a payment method active, it should deactivate the current active one and activate the new one, so that we don't have multiple active payment methods", () => {
@@ -87,7 +87,7 @@ describe("Parent profile backend", () => {
         .createPaymentMethod(1, "Debit Card", true)
         .setActivePaymentMethod(1, 1)
         .paymentMethods(1))
-      .toContainEqual({ id: 1, parentId: 1, method: "Credit Card", isActive: true })
+      .toContainEqual({ id: 1, parentId: 1, method: "Credit Card", isActive: true, createdAt: expect.any(String) })
     });
 
     it("When a payment method is added, we should be able to get it by id, so what we can show the newly added payment method", () => {
@@ -96,7 +96,7 @@ describe("Parent profile backend", () => {
         .createParentProfile("Charlie", "David")
         .createPaymentMethod(2, "Credit Card", true)
         .paymentMethod(1))
-      .toEqual({ id: 1, parentId: 2, method: "Credit Card", isActive: true })
+      .toEqual({ id: 1, parentId: 2, method: "Credit Card", isActive: true, createdAt: expect.any(String) })
     });
   });
 });

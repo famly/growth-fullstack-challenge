@@ -1,9 +1,27 @@
 import { db, query } from "../db/database";
 import mysql from "mysql2/promise";
-import { Invoice, ParentProfile, PaymentMethod } from "../parentProfileBackend";
+import { Invoice, ParentProfile, PaymentMethod, PaymentMethodHistory } from "../parentProfileBackend";
 
 export class ProfileRepository {
-  async createPaymentMethod(paymentMethod: PaymentMethod): Promise<PaymentMethod> {
+  // Helper to generate a random user ID (for demonstration purposes)
+  private getRandomUserId(): number {
+    return Math.floor(Math.random() * 1000) + 1;
+  }
+
+  // Helper to record payment method history
+  private async recordHistory(paymentMethod: PaymentMethod): Promise<void> {
+    const sql = `INSERT INTO payment_method_history 
+      (payment_method_id, parent_id, method, is_active, changed_by_user_id) 
+      VALUES (?, ?, ?, ?, ?)`;
+    await db.execute(sql, [
+      paymentMethod.id,
+      paymentMethod.parentId,
+      paymentMethod.method,
+      paymentMethod.isActive,
+      this.getRandomUserId(),
+    ]);
+  }
+  async createPaymentMethod(paymentMethod: Omit<PaymentMethod, 'id' | 'createdAt'>): Promise<PaymentMethod> {
     const sql = "INSERT INTO payment_methods (parent_id, method, is_active) VALUES (?, ?, ?)";
     const [result] = await db.execute<mysql.ResultSetHeader>(sql, [
       paymentMethod.parentId,
@@ -11,7 +29,30 @@ export class ProfileRepository {
       paymentMethod.isActive,
     ]);
     const insertId = result.insertId;
-    return { ...paymentMethod, id: insertId };
+    
+    // Fetch the created payment method to get the created_at timestamp
+    const createdMethod = await this.getPaymentMethodById(insertId);
+    
+    // Record history for creation
+    if (createdMethod) {
+      await this.recordHistory(createdMethod);
+    }
+    
+    return createdMethod || { ...paymentMethod, id: insertId, createdAt: '' };
+  }
+
+  private async getPaymentMethodById(id: number): Promise<PaymentMethod | null> {
+    const sql = "SELECT * FROM payment_methods WHERE id = ?";
+    const results = await query(sql, [id]);
+    if (results.length === 0) return null;
+    const r = results[0];
+    return {
+      id: r.id,
+      parentId: r.parent_id,
+      method: r.method,
+      isActive: r.is_active,
+      createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : r.created_at,
+    };
   }
 
   async retrievePaymentMethods(parentId: number): Promise<PaymentMethod[]> {
@@ -22,6 +63,7 @@ export class ProfileRepository {
       parentId: r.parent_id,
       method: r.method,
       isActive: r.is_active,
+      createdAt: r.created_at instanceof Date ? r.created_at.toISOString() : r.created_at,
     }));
   }
 
@@ -47,22 +89,52 @@ export class ProfileRepository {
   }
 
   async updatePaymentMethods(updatedPaymentMethods: PaymentMethod[]): Promise<number[]> {
-    const updatePromises = updatedPaymentMethods.map((paymentMethod) => {
+    const updatePromises = updatedPaymentMethods.map(async (paymentMethod) => {
       const sql = "UPDATE payment_methods SET parent_id = ?, method = ?, is_active = ? WHERE id = ?";
-      return db.execute<mysql.ResultSetHeader>(sql, [
+      const [result] = await db.execute<mysql.ResultSetHeader>(sql, [
         paymentMethod.parentId,
         paymentMethod.method,
         paymentMethod.isActive,
         paymentMethod.id,
       ]);
+      
+      // Get the updated payment method and record history
+      const updatedMethod = await this.getPaymentMethodById(paymentMethod.id);
+      if (updatedMethod) {
+        await this.recordHistory(updatedMethod);
+      }
+      
+      return result;
     });
     const results = await Promise.all(updatePromises);
-    return results.map(([result]) => result.affectedRows);
+    return results.map((result: mysql.ResultSetHeader) => result.affectedRows);
   }
 
   async deletePaymentMethod(methodId: number): Promise<boolean> {
+    // Get the payment method before deleting to record history
+    const method = await this.getPaymentMethodById(methodId);
+    
+    if (method) {
+      // Record history before deletion
+      await this.recordHistory(method);
+    }
+    
     const sql = "DELETE FROM payment_methods WHERE id = ?";
     const [result] = await db.execute<mysql.ResultSetHeader>(sql, [methodId]);
     return result.affectedRows > 0;
+  }
+
+  async retrievePaymentMethodHistory(paymentMethodId: number): Promise<PaymentMethodHistory[]> {
+    const sql = "SELECT * FROM payment_method_history WHERE payment_method_id = ? ORDER BY changed_at DESC";
+    const results = await query(sql, [paymentMethodId]);
+    return results.map((r) => ({
+      id: r.id,
+      paymentMethodId: r.payment_method_id,
+      parentId: r.parent_id,
+      method: r.method,
+      isActive: r.is_active,
+      changedAt: r.changed_at instanceof Date ? r.changed_at.toISOString() : r.changed_at,
+      changedByUserId: r.changed_by_user_id,
+    }));
   }
 }

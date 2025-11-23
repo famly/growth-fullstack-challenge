@@ -16,13 +16,23 @@ export const resolvers = {
     invoices: async (_: any, { parentId }: { parentId: number }) => {
       return new ParentProfileBackend([], await profileRepository.retrieveInvoices(parentId), []).invoices(parentId);
     },
+    paymentMethodHistory: async (_: any, { paymentMethodId }: { paymentMethodId: number }) => {
+      return await profileRepository.retrievePaymentMethodHistory(paymentMethodId);
+    },
   },
   Mutation: {
     addPaymentMethod: async (
       _: any,
       { parentId, method }: { parentId: number; method: string },
     ) => {
-      const paymentMethod = await profileRepository.createPaymentMethod({ id: 0, parentId, method, isActive: false });
+      // Check if there are any active payment methods
+      const existingMethods = await profileRepository.retrievePaymentMethods(parentId);
+      const hasActiveMethod = existingMethods.some(pm => pm.isActive); 
+      
+      // Auto-activate if no active methods exist
+      const isActive = !hasActiveMethod;
+      
+      const paymentMethod = await profileRepository.createPaymentMethod({ parentId, method, isActive });
       return new ParentProfileBackend([], [], [paymentMethod]).paymentMethod(paymentMethod.id);
     },
     setActivePaymentMethod: async (
@@ -37,10 +47,20 @@ export const resolvers = {
     },
     deletePaymentMethod: async (
       _: any,
-      { parentId, method }: { parentId: number; method: string },
+      { parentId, methodId }: { parentId: number; methodId: number },
     ) => {
-      const initialParentProfileBackend = new ParentProfileBackend([], [], await profileRepository.retrievePaymentMethods(parentId));
-      const parentProfileBackend = initialParentProfileBackend.deletePaymentMethod(parentId, method);
+      const allMethods = await profileRepository.retrievePaymentMethods(parentId);
+      const initialParentProfileBackend = new ParentProfileBackend([], [], allMethods);
+      
+      // Check if trying to delete the last active payment method
+      const methodToDelete = allMethods.find(pm => pm.id === methodId);
+      const activeMethods = allMethods.filter(pm => pm.isActive);
+      
+      if (methodToDelete?.isActive && activeMethods.length === 1) {
+        throw new Error("Cannot delete the last active payment method. At least one active payment method must remain.");
+      }
+      
+      const parentProfileBackend = initialParentProfileBackend.deletePaymentMethod(parentId, methodId);
 
       await Promise.all(initialParentProfileBackend.paymentMethods(parentId)
         .filter(paymentMethod => !parentProfileBackend.paymentMethods(parentId).includes(paymentMethod))

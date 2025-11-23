@@ -14,6 +14,7 @@ export const typeDefs = gql`
     parentId: Int!
     method: String!
     isActive: Boolean!
+    createdAt: String!
   }
 
   type Invoice {
@@ -23,15 +24,26 @@ export const typeDefs = gql`
     date: String!
   }
 
+  type PaymentMethodHistory {
+    id: Long!
+    paymentMethodId: Long!
+    parentId: Int!
+    method: String!
+    isActive: Boolean!
+    changedAt: String!
+    changedByUserId: Int!
+  }
+
   type Query {
     parentProfile(parentId: Long!): ParentProfile
     paymentMethods(parentId: Long!): [PaymentMethod]
     invoices(parentId: Long!): [Invoice]
+    paymentMethodHistory(paymentMethodId: Long!): [PaymentMethodHistory]
   }
 
   type Mutation {
     addPaymentMethod(parentId: Long!, method: String!): PaymentMethod
     setActivePaymentMethod(parentId: Long!, methodId: Long!): PaymentMethod
-    deletePaymentMethod(parentId: Long!, method: String!): Boolean
+    deletePaymentMethod(parentId: Long!, methodId: Long!): Boolean
   }
 `;

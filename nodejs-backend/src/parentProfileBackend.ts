@@ -9,6 +9,7 @@ export interface PaymentMethod {
     parentId: number;
     method: string;
     isActive: boolean;
+    createdAt: string;
 }
   
 export  interface Invoice {
@@ -16,6 +17,16 @@ export  interface Invoice {
     parentId: number;
     amount: number;
     date: string;
+}
+
+export interface PaymentMethodHistory {
+    id: number;
+    paymentMethodId: number;
+    parentId: number;
+    method: string;
+    isActive: boolean;
+    changedAt: string;
+    changedByUserId: number;
 }
 
 export class ParentProfileBackend {
@@ -53,12 +64,12 @@ export class ParentProfileBackend {
         return this.allPaymentMethods.find(paymentMethod => paymentMethod.id === paymentMethodId);
     }
 
-    createPaymentMethod(parentId: number, method: string, isActive: boolean) {
-        return new ParentProfileBackend(this.allParentProfiles, this.allInvoices, [...this.allPaymentMethods, { id: this.allPaymentMethods.length + 1, parentId, method, isActive }]);
+    createPaymentMethod(parentId: number, method: string, isActive: boolean, createdAt?: string) {
+        return new ParentProfileBackend(this.allParentProfiles, this.allInvoices, [...this.allPaymentMethods, { id: this.allPaymentMethods.length + 1, parentId, method, isActive, createdAt: createdAt ?? new Date().toISOString() }]);
     }
 
-    deletePaymentMethod(parentId: number, method: string) {
-        return new ParentProfileBackend(this.allParentProfiles, this.allInvoices, this.allPaymentMethods.filter(paymentMethod => !(paymentMethod.parentId === parentId && paymentMethod.method === method)));
+    deletePaymentMethod(parentId: number, methodId: number) {
+        return new ParentProfileBackend(this.allParentProfiles, this.allInvoices, this.allPaymentMethods.filter(paymentMethod => !(paymentMethod.parentId === parentId && paymentMethod.id === methodId)));
     }
 
     setActivePaymentMethod(parentId: number, paymentMethodId: number) {

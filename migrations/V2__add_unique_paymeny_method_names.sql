@@ -1,0 +1,3 @@
+-- Example migration to add a unique constraint on the method name
+-- ALTER TABLE payment_methods
+-- ADD CONSTRAINT unique_method_name UNIQUE (method);
