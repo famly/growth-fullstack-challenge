@@ -27,3 +27,15 @@ There's no E2E test suite in place. As this isn't asked, I'm not implementing it
 - Proper UI changes like error handling are scoped out, could e.g. be solved with a user friednly toast message 
 #### Optimizations:
 - No filtering the active methods in memory, but via predicate pushdown.
+
+### 4
+#### Reasoning:
+- First checked the migration to see there's no timestamp column existing in the data model yet.
+- To mimic prod behavior the initial migration should remain unalertered and a new migration should update the data model.
+- For simplicity I'll take the DB servers system time and assign a default value. 
+- The existing payment method values should be back-filled using the parent's first invoice timestamp for the lack of a better alternative.
+- After the data model is updated, the PaymentMethod types need to be updated to reflect the new model.
+- The frontend component should display the creation date.
+
+#### Scoped out:
+- Famly operates in a mutli-timezone context, therefore not only the timezone but also the offset should be stored. A timezone offset could be e.g. implemented by DB Tentant ID, Nursery-home address, Parent Address, etc. and should be aligned with the business domain. I'll treat everything as UTC now.

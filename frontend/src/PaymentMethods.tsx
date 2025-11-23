@@ -80,6 +80,7 @@ export const GET_PAYMENT_METHODS = gql`
       id
       method
       isActive
+      createdAt
     }
   }
 `;
@@ -184,13 +185,24 @@ const PaymentMethods = ({ parentId }: { parentId: number }) => {
             </ListItemIcon>
             <ListItemText
               primary={method.method}
-              secondary={method.isActive ? "Active" : "Inactive"}
+              secondary={
+                <>
+                  <span
+                    className={
+                      method.isActive ? classes.activeText : classes.inactiveText
+                    }
+                  >
+                    {method.isActive ? "Active" : "Inactive"}
+                  </span>
+                  {method.createdAt && (
+                    <>
+                      {" • "}
+                      Created: {new Date(method.createdAt).toLocaleDateString()}
+                    </>
+                  )}
+                </>
+              }
               primaryTypographyProps={{ className: classes.primaryText }}
-              secondaryTypographyProps={{
-                className: method.isActive
-                  ? classes.activeText
-                  : classes.inactiveText,
-              }}
             />
             {!method.isActive && (
               <Button

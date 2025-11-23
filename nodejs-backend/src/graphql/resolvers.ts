@@ -29,7 +29,7 @@ export const resolvers = {
       // Auto-activate if no active methods exist
       const isActive = !hasActiveMethod;
       
-      const paymentMethod = await profileRepository.createPaymentMethod({ id: 0, parentId, method, isActive });
+      const paymentMethod = await profileRepository.createPaymentMethod({ parentId, method, isActive });
       return new ParentProfileBackend([], [], [paymentMethod]).paymentMethod(paymentMethod.id);
     },
     setActivePaymentMethod: async (
